@@ -31,7 +31,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     ${details.participants
                       .map(
                         (email) =>
-                          `<li><span class="participant-pill">${email}</span></li>`
+                          `<li class="participant-item"><span class="participant-pill">${email}</span><span class="delete-participant" title="Remove participant" data-activity="${encodeURIComponent(
+                            name
+                          )}" data-email="${encodeURIComponent(
+                            email
+                          )}">&#128465;</span></li>`
                       )
                       .join("")}
                   </ul>`
@@ -41,7 +45,38 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         activitiesList.appendChild(card);
+      });
 
+      // Add event listeners for delete icons
+      document.querySelectorAll('.delete-participant').forEach((icon) => {
+        icon.addEventListener('click', function (e) {
+          const activity = decodeURIComponent(this.getAttribute('data-activity'));
+          const email = decodeURIComponent(this.getAttribute('data-email'));
+          if (confirm(`Remove ${email} from ${activity}?`)) {
+            unregisterParticipant(activity, email);
+          }
+        });
+      });
+    }
+
+    function unregisterParticipant(activityName, email) {
+      fetch(`/activities/${encodeURIComponent(activityName)}/signup?email=${encodeURIComponent(email)}`, {
+        method: 'DELETE',
+      })
+        .then((response) => {
+          if (!response.ok) {
+            return response.json().then((data) => { throw new Error(data.detail || 'Failed to unregister'); });
+          }
+          return response.json();
+        })
+        .then(() => {
+          // Refresh activities list
+          loadActivities();
+        })
+        .catch((err) => {
+          alert(err.message);
+        });
+    }
         // Add option to select dropdown
         const option = document.createElement("option");
         option.value = name;
